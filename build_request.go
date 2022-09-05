@@ -29,7 +29,7 @@ import (
 
 const issueInstantFormat = "2006-01-02T15:04:05Z"
 
-func (sp *SAMLServiceProvider) buildAuthnRequest(includeSig bool) (*etree.Document, error) {
+func (sp *SAMLServiceProvider) buildAuthnRequest(includeSig bool, id string) (*etree.Document, error) {
 	authnRequest := &etree.Element{
 		Space: "samlp",
 		Tag:   "AuthnRequest",
@@ -38,9 +38,11 @@ func (sp *SAMLServiceProvider) buildAuthnRequest(includeSig bool) (*etree.Docume
 	authnRequest.CreateAttr("xmlns:samlp", "urn:oasis:names:tc:SAML:2.0:protocol")
 	authnRequest.CreateAttr("xmlns:saml", "urn:oasis:names:tc:SAML:2.0:assertion")
 
-	arId := uuid.NewV4()
+	if id == "" {
+		id = "_" + uuid.NewV4().String()
+	}
 
-	authnRequest.CreateAttr("ID", "_"+arId.String())
+	authnRequest.CreateAttr("ID", id)
 	authnRequest.CreateAttr("Version", "2.0")
 	authnRequest.CreateAttr("ProtocolBinding", "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST")
 	authnRequest.CreateAttr("AssertionConsumerServiceURL", sp.AssertionConsumerServiceURL)
@@ -95,11 +97,15 @@ func (sp *SAMLServiceProvider) buildAuthnRequest(includeSig bool) (*etree.Docume
 }
 
 func (sp *SAMLServiceProvider) BuildAuthRequestDocument() (*etree.Document, error) {
-	return sp.buildAuthnRequest(true)
+	return sp.buildAuthnRequest(true, "")
+}
+
+func (sp *SAMLServiceProvider) BuildAuthRequestDocumentWithID(id string) (*etree.Document, error) {
+	return sp.buildAuthnRequest(true, id)
 }
 
 func (sp *SAMLServiceProvider) BuildAuthRequestDocumentNoSig() (*etree.Document, error) {
-	return sp.buildAuthnRequest(false)
+	return sp.buildAuthnRequest(false, "")
 }
 
 // SignAuthnRequest takes a document, builds a signature, creates another document
@@ -254,7 +260,7 @@ func (sp *SAMLServiceProvider) buildAuthBodyPostFromDocument(relayState string, 
 	return rv.Bytes(), nil
 }
 
-//BuildAuthBodyPost builds the POST body to be sent to IDP.
+// BuildAuthBodyPost builds the POST body to be sent to IDP.
 func (sp *SAMLServiceProvider) BuildAuthBodyPost(relayState string) ([]byte, error) {
 	var doc *etree.Document
 	var err error
@@ -272,8 +278,8 @@ func (sp *SAMLServiceProvider) BuildAuthBodyPost(relayState string) ([]byte, err
 	return sp.buildAuthBodyPostFromDocument(relayState, doc)
 }
 
-//BuildAuthBodyPostFromDocument builds the POST body to be sent to IDP.
-//It takes the AuthnRequest xml as input.
+// BuildAuthBodyPostFromDocument builds the POST body to be sent to IDP.
+// It takes the AuthnRequest xml as input.
 func (sp *SAMLServiceProvider) BuildAuthBodyPostFromDocument(relayState string, doc *etree.Document) ([]byte, error) {
 	return sp.buildAuthBodyPostFromDocument(relayState, doc)
 }
@@ -382,8 +388,8 @@ func (sp *SAMLServiceProvider) BuildLogoutRequestDocument(nameID string, session
 	return sp.buildLogoutRequest(true, nameID, sessionIndex)
 }
 
-//BuildLogoutBodyPostFromDocument builds the POST body to be sent to IDP.
-//It takes the LogoutRequest xml as input.
+// BuildLogoutBodyPostFromDocument builds the POST body to be sent to IDP.
+// It takes the LogoutRequest xml as input.
 func (sp *SAMLServiceProvider) BuildLogoutBodyPostFromDocument(relayState string, doc *etree.Document) ([]byte, error) {
 	return sp.buildLogoutBodyPostFromDocument(relayState, doc)
 }
